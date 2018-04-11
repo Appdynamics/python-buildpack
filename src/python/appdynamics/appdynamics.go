@@ -82,10 +82,7 @@ func GenerateAppdynamicsScript(envVars map[string]string) string {
 		envStr := fmt.Sprintf("export %s=%s", envKey, envVal)
 		scriptContents += "\n" + envStr
 	}
-
-	pythonAgent := `awk 'NR==1{mid=5; $0=substr($0,1,mid) "/home/vcap/deps/0/bin/pyagent run " substr($0,mid+1)} 1' /home/vcap/app/Procfile > /home/vcap/app/tmp && mv /home/vcap/app/tmp /home/vcap/app/Procfile`
-	scriptContents += "\n\n" + pythonAgent + "\n"
-
+	
 	return scriptContents
 }
 
