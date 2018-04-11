@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"strings"
+	"io/ioutil"
+	"errors"
 )
 
 type Plan struct {
@@ -81,12 +83,29 @@ func GenerateAppdynamicsScript(envVars map[string]string) string {
 	return scriptContents
 }
 
-func GenerateStartUpCommand(startCommand string) string {
+func GenerateStartUpCommand(startCommand string) (string, error) {
 	webCommands := strings.SplitN(startCommand, ":", 2)
 	if len(webCommands) != 2 {
-		return ""
+		return "", errors.New("improper format found in Procfile")
 	}
-	return fmt.Sprintf("web: pyagent run -- %s", webCommands[1])
+	return fmt.Sprintf("web: pyagent run -- %s", webCommands[1]), nil
+}
+
+func RewriteProcFile(procFilePath string) error {
+	startCommand, err := ioutil.ReadFile(procFilePath)
+	if err != nil {
+		return err
+	}
+
+	if newCommand, err :=  GenerateStartUpCommand(string(startCommand)); err != nil {
+		return err
+	} else {
+		if err := ioutil.WriteFile(procFilePath, []byte(newCommand), 0644); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 /*func main() {
