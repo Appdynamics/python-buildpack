@@ -192,6 +192,8 @@ func (s *Supplier) RewriteProcFileWithAppdynamics() error {
 		if err := appdynamics.RewriteProcFile(file); err != nil {
 			return err
 		}
+	} else {
+		s.Log.Info("Cannot find Procfile, skipping this step!")
 	}
 	return nil
 }
