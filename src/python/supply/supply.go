@@ -191,8 +191,6 @@ func (s *Supplier) RewriteProcFileWithAppdynamics() error {
 	if exists, _ := libbuildpack.FileExists(file); exists {
 		if err := appdynamics.RewriteProcFile(file); err != nil {
 			return err
-		} else {
-			s.Log.Info("Procfile not found")
 		}
 	}
 	return nil

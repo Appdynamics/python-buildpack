@@ -96,7 +96,6 @@ func RewriteProcFile(procFilePath string) error {
 	if err != nil {
 		return err
 	}
-
 	if newCommand, err :=  GenerateStartUpCommand(string(startCommand)); err != nil {
 		return err
 	} else {
@@ -104,7 +103,6 @@ func RewriteProcFile(procFilePath string) error {
 			return err
 		}
 	}
-
 	return nil
 }
 
