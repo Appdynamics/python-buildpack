@@ -1,8 +1,4 @@
 #!/usr/bin/env bash
 # bin/release <build-dir>
 
-cat <<EOF
----
-config_vars:
-
-EOF
+echo -e "---\ndefault_process_types:\n  web: pyagent run -- python hello.py"
