@@ -16,6 +16,7 @@ import (
 	"github.com/cloudfoundry/libbuildpack"
 	"github.com/cloudfoundry/libbuildpack/snapshot"
 	"github.com/kr/text"
+	"python/appdynamics"
 )
 
 type Stager interface {
@@ -132,6 +133,11 @@ func RunPython(s *Supplier) error {
 		return err
 	}
 
+	if err := s.CreateAppDynamicsEnv(); err != nil {
+		s.Log.Error("Could not create Appdynamics environment: %v", err)
+		return err
+	}
+
 	if err := s.DownloadNLTKCorpora(); err != nil {
 		s.Log.Error("Could not download NLTK Corpora: %v", err)
 		return err
@@ -192,6 +198,7 @@ func (s *Supplier) HandleMercurial() error {
 	}
 	return nil
 }
+
 
 func (s *Supplier) HandlePipfile() error {
 	var pipfileExists, runtimeExists bool
@@ -514,8 +521,9 @@ func (s *Supplier) RunPip() error {
 		return nil
 	}
 
-	installArgs := []string{"install", "-r", filepath.Join(s.Stager.DepDir(), "requirements.txt"), "--ignore-installed", "--exists-action=w", "--src=" + filepath.Join(s.Stager.DepDir(), "src")}
+	installArgs := []string{"install", "appdynamics", "-r", filepath.Join(s.Stager.DepDir(), "requirements.txt"), "--ignore-installed", "--exists-action=w", "--src=" + filepath.Join(s.Stager.DepDir(), "src")}
 	vendorExists, err := libbuildpack.FileExists(filepath.Join(s.Stager.BuildDir(), "vendor"))
+	
 	if err != nil {
 		return fmt.Errorf("Couldn't check vendor existence: %v", err)
 	} else if vendorExists {
@@ -565,6 +573,12 @@ export GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-'--access-logfile -'}
 	}
 
 	return s.Stager.WriteProfileD("python.sh", scriptContents)
+}
+
+func (s *Supplier) CreateAppDynamicsEnv() error {
+	environmentVars := appdynamics.GatherAppdynamicsInfo()
+	scriptContents := appdynamics.GenerateAppdynamicsScript(environmentVars)
+	return s.Stager.WriteProfileD("appdynamics.sh", scriptContents)
 }
 
 func (s *Supplier) DownloadNLTKCorpora() error {
