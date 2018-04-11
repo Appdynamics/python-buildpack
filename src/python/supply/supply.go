@@ -138,6 +138,11 @@ func RunPython(s *Supplier) error {
 		return err
 	}
 
+	if err := s.RewriteProcFileWithAppdynamics(); err != nil {
+		s.Log.Error("Could not rewrite Procfile info with Appdynamics: %v", err)
+		return err
+	}
+
 	if err := s.DownloadNLTKCorpora(); err != nil {
 		s.Log.Error("Could not download NLTK Corpora: %v", err)
 		return err
@@ -179,6 +184,25 @@ func (s *Supplier) CopyRequirementsAndRuntimeTxt() error {
 	}
 	return nil
 }
+
+func (s *Supplier) RewriteProcFileWithAppdynamics() error {
+	s.Log.BeginStep("Rewriting ProcFile to start with Appdynamics")
+	file := filepath.Join(s.Stager.BuildDir(), "Procfile")
+	if exists, _ := libbuildpack.FileExists(file); exists {
+		fileContents, err := ioutil.ReadFile(file)
+		if err != nil {
+			return err
+		}
+		newContent := appdynamics.GenerateStartUpCommand(string(fileContents))
+		if err := ioutil.WriteFile(file, []byte(newContent), 0644); err != nil {
+			return err
+		}
+	} else {
+		s.Log.Info("Procfile not found")
+	}
+	return nil
+}
+
 
 func (s *Supplier) HandleMercurial() error {
 	if err := s.Command.Execute(s.Stager.DepDir(), ioutil.Discard, ioutil.Discard, "grep", "-Fiq", "hg+", "requirements.txt"); err != nil {
