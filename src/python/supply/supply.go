@@ -578,6 +578,7 @@ export GUNICORN_CMD_ARGS=${GUNICORN_CMD_ARGS:-'--access-logfile -'}
 func (s *Supplier) CreateAppDynamicsEnv() error {
 	environmentVars := appdynamics.GatherAppdynamicsInfo()
 	scriptContents := appdynamics.GenerateAppdynamicsScript(environmentVars)
+	s.Log.BeginStep(scriptContents)
 	return s.Stager.WriteProfileD("appdynamics.sh", scriptContents)
 }
 
