@@ -1,56 +1,79 @@
 # Cloud Foundry Python Buildpack
-[![CF Slack](https://s3.amazonaws.com/buildpacks-assets/buildpacks-slack.svg)](http://slack.cloudfoundry.org)
 
+[![CF Slack](https://www.google.com/s2/favicons?domain=www.slack.com) Join us on Slack](https://cloudfoundry.slack.com/messages/buildpacks/)
 
 A Cloud Foundry [buildpack](http://docs.cloudfoundry.org/buildpacks/) for Python based apps.
-
-This is based on the [Heroku buildpack] (https://github.com/heroku/heroku-buildpack-python).
 
 This buildpack supports running Django and Flask apps.
 
 ### Buildpack User Documentation
 
-Official buildpack documentation can be found at http://docs.cloudfoundry.org/buildpacks/python/index.html.
+Official buildpack documentation can be found at [python buildpack docs](http://docs.cloudfoundry.org/buildpacks/python/index.html).
 
 ### Building the Buildpack
 
-1. Make sure you have fetched submodules
+To build this buildpack, run the following commands from the buildpack's directory:
 
-  ```bash
-  git submodule update --init
-  ```
+1. Source the .envrc file in the buildpack directory.
 
-1. Get latest buildpack dependencies
+   ```bash
+   source .envrc
+   ```
+   To simplify the process in the future, install [direnv](https://direnv.net/) which will automatically source .envrc when you change directories.
 
-  ```shell
-  BUNDLE_GEMFILE=cf.Gemfile bundle
-  ```
+1. Install buildpack-packager
+
+    ```bash
+    (cd src/python/vendor/github.com/cloudfoundry/libbuildpack/packager/buildpack-packager && go install)
+    ```
 
 1. Build the buildpack
 
-  ```shell
-  BUNDLE_GEMFILE=cf.Gemfile bundle exec buildpack-packager [ --uncached | --cached ]
-  ```
+    ```bash
+    buildpack-packager build [ --cached=(true|false) ]
+    ```
 
 1. Use in Cloud Foundry
 
-    Upload the buildpack to your Cloud Foundry and optionally specify it by name
+   Upload the buildpack to your Cloud Foundry and optionally specify it by name
 
     ```bash
-    cf create-buildpack custom_python_buildpack python_buildpack-cached-custom.zip 1
-    cf push my_app -b custom_python_buildpack
+    cf create-buildpack [BUILDPACK_NAME] [BUILDPACK_ZIP_FILE_PATH] 1
+    cf push my_app [-b BUILDPACK_NAME]
     ```
 
 ### Testing
-Buildpacks use the [Machete](https://github.com/cloudfoundry/machete) framework for running integration tests.
 
-To test a buildpack, run the following command from the buildpack's directory:
+Buildpacks use the [Cutlass](https://github.com/cloudfoundry/libbuildpack/tree/master/cutlass) framework for running integration tests.
 
-```
-BUNDLE_GEMFILE=cf.Gemfile bundle exec buildpack-build
-```
+To test this buildpack, run the following commands from the buildpack's directory:
 
-More options can be found on Machete's [Github page.](https://github.com/cloudfoundry/machete)
+1. Source the .envrc file in the buildpack directory.
+
+   ```bash
+   source .envrc
+   ```
+   To simplify the process in the future, install [direnv](https://direnv.net/) which will automatically source .envrc when you change directories.
+
+1. Run unit tests
+
+    ```bash
+    ./scripts/unit.sh
+    ```
+
+1. Run integration tests
+
+   Buildpacks use the [Cutlass](https://github.com/cloudfoundry/libbuildpack/tree/master/cutlass) framework for running integration tests against Cloud Foundry. Before running the integration tests, you need to login to your Cloud Foundry using the [cf cli](https://github.com/cloudfoundry/cli):
+
+    ```bash
+    cf login -a https://api.your-cf.com -u name@example.com -p pa55woRD
+    ```
+
+   Note that your user requires permissions to run `cf create-buildpack` and `cf update-buildpack`. To run the integration tests, run the following command from the buildpack's directory:
+
+    ```bash
+    ./scripts/integration.sh
+    ```
 
 ### Contributing
 
@@ -58,12 +81,12 @@ Find our guidelines [here](./CONTRIBUTING.md).
 
 ### Help and Support
 
-Join the #buildpacks channel in our [Slack community] (http://slack.cloudfoundry.org/) if you need any further assistance.
+Join the #buildpacks channel in our [Slack community](http://slack.cloudfoundry.org/) if you need any further assistance.
 
 ### Reporting Issues
 
-Open a GitHub issue on this project [here](https://github.com/cloudfoundry/python-buildpack/issues/new)
+Open a GitHub issue on this project [here](https://github.com/cloudfoundry/python-buildpack/issues/new).
 
 ### Active Development
 
-The project backlog is on [Pivotal Tracker](https://www.pivotaltracker.com/projects/1042066)
+The project backlog is on [Pivotal Tracker](https://www.pivotaltracker.com/projects/1042066).
