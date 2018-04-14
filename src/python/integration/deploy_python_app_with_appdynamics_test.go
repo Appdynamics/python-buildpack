@@ -7,9 +7,9 @@ import (
 
 	"github.com/cloudfoundry/libbuildpack/cutlass"
 
+	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"fmt"
 )
 
 var _ = Describe("appdynamics", func() {
@@ -90,7 +90,6 @@ var _ = Describe("appdynamics", func() {
   ]
 }]}`
 		Expect(vcapServicesEnv).To(Equal(vcapServicesExpected))
-		//fmt.Println(vcapServicesEnv)
 
 		By("Checking if the build pack installed and started appdynamics")
 		logs := app.Stdout.String()
@@ -115,7 +114,6 @@ var _ = Describe("appdynamics", func() {
   "APPD_SSL_ENABLED": "on",
   "APPD_TIER_NAME": "%s"
 }`, app.Name, app.Name, app.Name)
-		//fmt.Println(appEnv)
 		Expect(appEnv).To(Equal(expectedAppEnv))
 
 		By("unbinding the service")
