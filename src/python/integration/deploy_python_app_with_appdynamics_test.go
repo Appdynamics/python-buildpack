@@ -12,10 +12,10 @@ import (
 	"fmt"
 )
 
-var _ = Describe("Appdynamics Integration", func() {
+var _ = Describe("appdynamics", func() {
 	var app, appdServiceBrokerApp *cutlass.App
 	var sbUrl string
-	const serviceName = "TestAppdynamics"
+	const serviceName = "appdynamics"
 
 	RunCf := func(args ...string) error {
 		command := exec.Command("cf", args...)
@@ -23,28 +23,6 @@ var _ = Describe("Appdynamics Integration", func() {
 		command.Stderr = GinkgoWriter
 		return command.Run()
 	}
-
-	AfterEach(func() {
-		if app != nil {
-			app.Destroy()
-		}
-		app = nil
-
-		command := exec.Command("cf", "purge-service-offering", "-f", serviceName)
-		command.Stdout = GinkgoWriter
-		command.Stderr = GinkgoWriter
-		_ = command.Run()
-
-		command = exec.Command("cf", "delete-service-broker", "-f", serviceName)
-		command.Stdout = GinkgoWriter
-		command.Stderr = GinkgoWriter
-		_ = command.Run()
-
-		if appdServiceBrokerApp != nil {
-			appdServiceBrokerApp.Destroy()
-		}
-		appdServiceBrokerApp = nil
-	})
 
 	BeforeEach(func() {
 		appdServiceBrokerApp = cutlass.New(filepath.Join(bpDir, "fixtures", "fake_appd_service_broker"))
@@ -55,26 +33,94 @@ var _ = Describe("Appdynamics Integration", func() {
 		sbUrl, err = appdServiceBrokerApp.GetUrl("")
 		Expect(err).ToNot(HaveOccurred())
 
-		RunCf("create-service-broker", serviceName, "username", "password", sbUrl, "--space-scoped")
-		RunCf("create-service", serviceName, "public", serviceName)
+		Expect(RunCf("create-service-broker", serviceName, "admin", "D6YiK6fr-niTTRWkqIsVuijvqL4RjWKc", sbUrl, "--space-scoped")).To(Succeed())
+		Expect(RunCf("create-service", serviceName, "public", serviceName)).To(Succeed())
 
 		app = cutlass.New(filepath.Join(bpDir, "fixtures", "with_appdynamics"))
 		app.SetEnv("BP_DEBUG", "true")
 		PushAppAndConfirm(app)
 	})
 
-	Context("bind a python app with appdynamics service", func() {
-		BeforeEach(func() {
-			RunCf("bind-service", app.Name, serviceName)
+	AfterEach(func() {
+		if app != nil {
+			app.Destroy()
+		}
+		app = nil
 
-			app.Stdout.Reset()
-			RunCf("restage", app.Name)
-		})
+		RunCf("purge-service-offering", "-f", serviceName)
+		RunCf("delete-service-broker", "-f", serviceName)
 
-		It("test if appdynamics was successfully bound", func() {
-			//Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
-			fmt.Print(app.Stdout.String())
-			//Expect(app.Stdout.String()).To(ContainSubstring("Snyk token was found"))
-		})
+		if appdServiceBrokerApp != nil {
+			appdServiceBrokerApp.Destroy()
+		}
+		appdServiceBrokerApp = nil
 	})
+
+	It("test if appdynamics was successfully bound", func() {
+		By("Binding appdynamics service to the test application")
+		Expect(RunCf("bind-service", app.Name, serviceName)).To(Succeed())
+
+		By("Restaging the test application")
+		app.Stdout.Reset()
+		Expect(RunCf("restage", app.Name)).To(Succeed())
+
+		By("checking if the application has started fine and has correctly bound to appdynamics")
+		vcapServicesEnv, err := app.GetBody("/vcap")
+		Expect(err).To(BeNil())
+		vcapServicesExpected := `{"appdynamics":[{
+  "name": "appdynamics",
+  "instance_name": "appdynamics",
+  "binding_name": null,
+  "credentials": {
+    "account-access-key": "test-key",
+    "account-name": "test-account",
+    "host-name": "test-sb-host",
+    "port": "1234",
+    "ssl-enabled": true
+  },
+  "syslog_drain_url": null,
+  "volume_mounts": [
+
+  ],
+  "label": "appdynamics",
+  "provider": null,
+  "plan": "public",
+  "tags": [
+
+  ]
+}]}`
+		Expect(vcapServicesEnv).To(Equal(vcapServicesExpected))
+		fmt.Println(vcapServicesEnv)
+
+		By("Checking if the build pack installed and started appdynamics")
+		logs := app.Stdout.String()
+
+		Expect(app.ConfirmBuildpack(buildpackVersion)).To(Succeed())
+		Expect(logs).To(ContainSubstring("-----> Setting up Appdynamics"))
+		Expect(logs).To(ContainSubstring("-----> Rewriting Requirements file with appdynamics package"))
+		Expect(logs).To(ContainSubstring("-----> Writing Appdynamics Environment"))
+		Expect(logs).To(ContainSubstring("appdynamics.proxy.watchdog"))
+		Expect(logs).To(ContainSubstring("Started proxy with pid"))
+
+		By("Checking if the buildpack properly set the APPD environment variables in apps environments")
+		appEnv, err := app.GetBody("/appd")
+		Expect(err).To(BeNil())
+		expectedAppEnv := fmt.Sprintf(`{
+  "APPD_ACCOUNT_ACCESS_KEY": "test-key",
+  "APPD_ACCOUNT_NAME": "test-account",
+  "APPD_APP_NAME": "%s",
+  "APPD_CONTROLLER_HOST": "test-sb-host",
+  "APPD_CONTROLLER_PORT": "1234",
+  "APPD_NODE_NAME": "%s",
+  "APPD_SSL_ENABLED": "off",
+  "APPD_TIER_NAME": "%s"
+}`, app.Name, app.Name, app.Name)
+		fmt.Println(appEnv)
+		Expect(appEnv).To(Equal(expectedAppEnv))
+
+		By("unbinding the service")
+		Expect(RunCf("unbind-service", app.Name, serviceName)).To(Succeed())
+
+	})
+
 })
