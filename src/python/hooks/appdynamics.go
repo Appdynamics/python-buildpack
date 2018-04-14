@@ -136,7 +136,7 @@ func (h AppdynamicsHook) RewriteProcFileWithAppdynamics(stager *libbuildpack.Sta
 func (h AppdynamicsHook) CreateAppDynamicsEnv(stager *libbuildpack.Stager, environmentVars map[string]string) error {
 	scriptContents := h.GenerateAppdynamicsScript(environmentVars)
 	h.Log.BeginStep("Writing Appdynamics Environment")
-	h.Log.BeginStep(scriptContents)
+	h.Log.Debug(scriptContents)
 	return stager.WriteProfileD("appdynamics.sh", scriptContents)
 }
 
@@ -162,6 +162,12 @@ func (h AppdynamicsHook) BeforeCompile(stager *libbuildpack.Stager) error {
 			h.Log.Debug("Could not unmarshall VCAP_APPLICATION JSON")
 		}
 
+		sslFlag := "off"
+
+		if appdynamicsPlan.SslEnabled {
+			sslFlag = "on"
+		}
+
 		appdEnv := map[string]string{
 			"APPD_APP_NAME":           h.getEnv("APPD_APP_NAME", application.ApplicationName),
 			"APPD_TIER_NAME":          h.getEnv("APPD_TIER_NAME", application.ApplicationName),
@@ -170,7 +176,7 @@ func (h AppdynamicsHook) BeforeCompile(stager *libbuildpack.Stager) error {
 			"APPD_CONTROLLER_PORT":    appdynamicsPlan.ControllerPort,
 			"APPD_ACCOUNT_ACCESS_KEY": appdynamicsPlan.AccountAccessKey,
 			"APPD_ACCOUNT_NAME":       appdynamicsPlan.AccountName,
-			"APPD_SSL_ENABLED":        "off",
+			"APPD_SSL_ENABLED":        sslFlag,
 		}
 
 		if err := h.RewriteRequirementsFile(stager); err != nil {

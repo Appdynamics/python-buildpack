@@ -90,7 +90,7 @@ var _ = Describe("appdynamics", func() {
   ]
 }]}`
 		Expect(vcapServicesEnv).To(Equal(vcapServicesExpected))
-		fmt.Println(vcapServicesEnv)
+		//fmt.Println(vcapServicesEnv)
 
 		By("Checking if the build pack installed and started appdynamics")
 		logs := app.Stdout.String()
@@ -112,10 +112,10 @@ var _ = Describe("appdynamics", func() {
   "APPD_CONTROLLER_HOST": "test-sb-host",
   "APPD_CONTROLLER_PORT": "1234",
   "APPD_NODE_NAME": "%s",
-  "APPD_SSL_ENABLED": "off",
+  "APPD_SSL_ENABLED": "on",
   "APPD_TIER_NAME": "%s"
 }`, app.Name, app.Name, app.Name)
-		fmt.Println(appEnv)
+		//fmt.Println(appEnv)
 		Expect(appEnv).To(Equal(expectedAppEnv))
 
 		By("unbinding the service")
