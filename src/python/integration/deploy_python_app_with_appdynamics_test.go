@@ -10,12 +10,22 @@ import (
 	"fmt"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"os"
 )
+
+func getEnv(key, fallback string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+	return fallback
+}
 
 var _ = Describe("appdynamics", func() {
 	var app, appdServiceBrokerApp *cutlass.App
 	var sbUrl string
 	const serviceName = "appdynamics"
+	cfUsername := getEnv("CF_USER_NAME", "username")
+	cfPassword := getEnv("CF_PASSWORD", "password")
 
 	RunCf := func(args ...string) error {
 		command := exec.Command("cf", args...)
@@ -33,7 +43,7 @@ var _ = Describe("appdynamics", func() {
 		sbUrl, err = appdServiceBrokerApp.GetUrl("")
 		Expect(err).ToNot(HaveOccurred())
 
-		Expect(RunCf("create-service-broker", serviceName, "admin", "D6YiK6fr-niTTRWkqIsVuijvqL4RjWKc", sbUrl, "--space-scoped")).To(Succeed())
+		Expect(RunCf("create-service-broker", serviceName, cfUsername, cfPassword, sbUrl, "--space-scoped")).To(Succeed())
 		Expect(RunCf("create-service", serviceName, "public", serviceName)).To(Succeed())
 
 		app = cutlass.New(filepath.Join(bpDir, "fixtures", "with_appdynamics"))
